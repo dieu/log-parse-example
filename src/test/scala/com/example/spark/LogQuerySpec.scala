@@ -12,6 +12,8 @@ import org.specs2.mutable.Specification
 import org.specs2.ScalaCheck
 import org.specs2.scalacheck.Parameters
 
+import scala.collection.mutable
+
 @RunWith(classOf[JUnitRunner])
 class LogQuerySpec extends Specification
     with SharedSparkContextBeforeAfterAll
@@ -22,7 +24,21 @@ class LogQuerySpec extends Specification
   override def sparkMaster : String = "local[5]"
   override def sparkAppName = this.getClass.getName
 
-  implicit def defaultScalacheckParams = Parameters(minTestsOk = 1).verbose
+  implicit def defaultScalacheckParams = Parameters(minTestsOk = 100).verbose
+
+  implicit class DistinctBy[A](seq: Seq[A]) {
+    def distinctBy[B](f: A => B) = {
+      val b = Seq[A]()
+      val seen = mutable.HashSet[B]()
+      for (x <- seq) {
+        if (!seen(f(x))) {
+          b :+ x
+          seen += f(x)
+        }
+      }
+      b
+    }
+  }
 
   val currentTime = new java.util.Date().getTime
 
@@ -30,12 +46,18 @@ class LogQuerySpec extends Specification
     first <- firstGen
     second <- secondGen
     user <- Gen.choose(1, 100)
-    begin <- Gen.const(currentTime)
-    end <- Gen.const(currentTime + 1)
-  } yield Seq(s"$user, $begin, $first", s"$user, $end, $second")
+    shift <- Gen.posNum[Int]
+    begin <- Gen.const(currentTime + shift)
+  } yield (first, second, user, shift, begin)
 
   def genEvents(firstGen: Gen[String], secondGen: Gen[String]): Gen[Seq[String]] = {
-    Gen.nonEmptyListOf(genEvent(firstGen, secondGen)).map(_.flatten)
+    Gen
+      .containerOf[Seq, (String, String, Int, Int, Long)](genEvent(firstGen, secondGen))
+      .map(_.sortBy(_._4).distinctBy(_._3))
+      .map(_.map({
+        case (first, second, user, shift, begin) => Seq(s"$user, $begin, $first", s"$user, ${begin + 1}, $second")
+      }))
+      .map(_.flatten)
   }
 
   val openCloseEvents = RDDGen.seqGen2RDDGen(genEvents(Gen.const("open"), Gen.const("close")))

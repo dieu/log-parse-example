@@ -5,7 +5,6 @@ import java.net.InetAddress
 import java.nio.charset.Charset
 import java.nio.file.{Files, Paths}
 
-import com.example.spark.formatter.PairOutputFormat
 import com.example.spark.utils.FileMerger
 import org.apache.commons.io.{FilenameUtils, FileUtils}
 import org.apache.hadoop.io.{LongWritable, Text}
@@ -88,8 +87,9 @@ object StandaloneApp {
 
         averageSpentDataSet
           .mapPartitions(_.map(value => (new Text(value._1), new LongWritable(value._2))))
-          .saveAsHadoopFile[PairOutputFormat](config.outputFolder)
+          .saveAsTextFile(config.outputFolder)
 
+        //TODO integration with data storage or another processing pipeline
         if (config.collect) {
           saveOnDriverDisk(config, averageSpentDataSet)
         }
@@ -99,6 +99,11 @@ object StandaloneApp {
     }
   }
 
+  /**
+    * Save data on disk on Driver machine
+    * @param config application arguments
+    * @param dataSet data set
+    */
   def saveOnDriverDisk(config: Config, dataSet: RDD[(String, Long)]): Unit = {
     val toFile = new FileOutputStream(FilenameUtils.concat(config.outputFolder, outputFile), false)
     FileMerger.using(toFile) { fileWriter =>

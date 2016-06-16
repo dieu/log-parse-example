@@ -1,10 +1,24 @@
 package com.example.spark
 
 trait DecisionPolicy {
+  /**
+    * Function for calculate difference time between event
+    * @param one first event
+    * @param second second event
+    * @tparam A actual event type
+    * @return difference time between event
+    */
   def difference[A <: Action](one: A, second: A): Long
 }
 
 object IgnoringPolicy extends DecisionPolicy {
+  /**
+    * Function for calculate difference time between open/close events and ignore others
+    * @param one first event
+    * @param second second event
+    * @tparam A actual event type
+    * @return difference time between open/close events and 0l for others
+    */
   override def difference[A <: Action](one: A, second: A): Long = (one, second) match {
     case (open: OpenAction, close: CloseAction) => close - open
     case (open1: OpenAction, open2: OpenAction) => 0l
