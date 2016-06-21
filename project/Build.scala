@@ -3,18 +3,18 @@ import Keys._
 import sbtassembly.{PathList, MergeStrategy, AssemblyKeys}
 import AssemblyKeys._
 
-object SparkExample extends Build {
+object SingletonExample extends Build {
   lazy val commonSettings = Seq(
-    name := "SparkExample",
+    name := "SingletonExample",
     organization := "com.example",
     version := Version.projectVersion,
     scalaVersion := Version.scala,
-    libraryDependencies ++= Dependencies.cli ++ Dependencies.spark ++ Dependencies.test,
+    libraryDependencies ++= Dependencies.cli ++ Dependencies.common ++ Dependencies.test,
     scalacOptions ++= Seq("-deprecation", "-unchecked", "-feature"),
 
-    mainClass in (Compile, packageBin) := Some("com.example.spark.StandaloneApp"),
-    mainClass in (Compile, run) := Some("com.example.spark.StandaloneApp"),
-    mainClass in assembly := Some("com.example.spark.StandaloneApp"),
+    mainClass in (Compile, packageBin) := Some("com.example.singleton.StandaloneApp"),
+    mainClass in (Compile, run) := Some("com.example.singleton.StandaloneApp"),
+    mainClass in assembly := Some("com.example.singleton.StandaloneApp"),
     assemblyMergeStrategy in assembly := {
       case PathList("javax", "servlet", xs @ _*)              => MergeStrategy.first
       case PathList("META-INF", "MANIFEST.MF")                => MergeStrategy.discard

@@ -1,8 +1,13 @@
 package com.example.spark
 
+import com.example.singleton.compute.{Skip, Continue, Store, IgnoringPolicyComponentImpl}
+import com.example.singleton.{CloseAction, OpenAction}
 import org.scalacheck._
 
-object IgnoringPolicySpec extends Properties("policy") {
+object IgnoringPolicySpec
+  extends Properties("policy")
+    with IgnoringPolicyComponentImpl {
+
   import Prop.forAll
 
   val currentTime = new java.util.Date().getTime
@@ -18,18 +23,26 @@ object IgnoringPolicySpec extends Properties("policy") {
   }
 
   property("computeOpenClose") = forAll { (open: OpenAction, close: CloseAction) =>
-    IgnoringPolicy.difference(open, close) == close - open
+    policy.difference(open, close) match {
+      case Store(value) => value == close - open
+    }
   }
 
   property("ignoreCloseOpen") = forAll { (close: CloseAction, open: OpenAction) =>
-    IgnoringPolicy.difference(close, open) == 0l
+    policy.difference(close, open) match {
+      case Continue(`open`) => true
+    }
   }
 
   property("ignoreOpenOpen") = forAll { (first: OpenAction, second: OpenAction) =>
-    IgnoringPolicy.difference(first, second) == 0l
+    policy.difference(first, second) match {
+      case Continue(`second`) => true
+    }
   }
 
   property("ignoreCloseClose") = forAll { (first: CloseAction, second: CloseAction) =>
-    IgnoringPolicy.difference(first, second) == 0l
+    policy.difference(first, second) match {
+      case Skip() => true
+    }
   }
 }
